@@ -1,67 +1,89 @@
 package com.testen.drankdispenser;
 
 import com.testen.drankdispenser.glas.*;
+import com.testen.drankdispenser.reservoir.DrinkReservoir;
+import com.testen.drankdispenser.reservoir.Reservoir;
+import com.testen.drankdispenser.reservoir.WasteReservoir;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 
 public class Dispenser {
 
     private String name; //the name of the dispenser
     private HashMap<String, Glass> glasses;
+    private HashMap<String, Reservoir> reservoirs;
+    private WasteReservoir wasteReservoir;
 
     public static void main(String args[]) {
         System.out.println("Drankdispenser wordt gestart");
         Dispenser testen = new Dispenser("Testen dingetje");
-        testen.addGlass(DrinkTypes.BEER);
-        testen.addGlass(DrinkTypes.COLA);
+
+        //set the allowed drinks (set these before filling reservoirs ;) )
+        testen.addAllowedDrinkType(DrinkTypes.BEER);
+        testen.addAllowedDrinkType(DrinkTypes.COLA);
+
+        //perform maintenance
+        testen.emptyWasteReservoir();
+        testen.fillDrinkReservoirs();
+
+        //show the available stuff to the customer
         testen.printGlasses();
 
-
+        //pour some glasses
         try {
             testen.serveGlass(DrinkTypes.BEER);
-            testen.serveGlass(DrinkTypes.WINE);
+            testen.serveGlass(DrinkTypes.COLA);
         } catch (GlassNotAcceptedException e) {
-            e.printStackTrace();
+            System.out.println("Error: That glass is not supported");
         }
 
     }
 
-    public Dispenser(String Name){
+    public Dispenser(String Name) {
         name = Name;
         glasses = new HashMap<>();
+        reservoirs = new HashMap<>();
+        wasteReservoir = new WasteReservoir(1000);
     }
 
-    public String getName(){
+    public String getName() {
         return name;
     }
 
-    public void addGlass(DrinkTypes type) {
-        switch(type){
+    public void addAllowedDrinkType(DrinkTypes type) {
+        String typeName = type.name();
+        int resSize = 1500;
+        switch (type) {
             case COLA:
-                glasses.put("Cola", new ColaGlass());
+                glasses.put(typeName, new ColaGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
             case FANTA:
-                glasses.put("Sinas", new FantaGlass());
+                glasses.put(typeName, new FantaGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
             case CASSIS:
-                glasses.put("Cassis", new CassisGlass());
+                glasses.put(typeName, new CassisGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
             case BEER:
-                glasses.put("Beer", new BeerGlass());
+                glasses.put(typeName, new BeerGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
             case WINE:
-                glasses.put("Wine", new WineGlass());
+                glasses.put(typeName, new WineGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
             case COFFEE:
-                glasses.put("Coffee", new CoffeeGlass());
+                glasses.put(typeName, new CoffeeGlass());
+                reservoirs.put(typeName, new DrinkReservoir(resSize));
                 break;
         }
     }
 
-    public void printGlasses(){
+    public void printGlasses() {
         System.out.println("Glazen die herkent worden door de dispenser:");
-        for(Glass item: glasses.values()){
+        for (Glass item : glasses.values()) {
             System.out.println("    - " + item.getName() + " Inhoud: " + item.getSize() + "ml.");
         }
     }
@@ -69,14 +91,24 @@ public class Dispenser {
     public void serveGlass(DrinkTypes glass) throws GlassNotAcceptedException {
         for (Glass item : glasses.values()) {
             if (item.getDrinkType() == glass) {
-                item.fillGlass(); //the actual served glass is no object because we turn on the dispenser
-                System.out.println("Glass was filled with " + item.getName());
+                item.glassDetected(true); //you could set this to false half way through pouring except we don't do multithreading
+                try {
+                    item.fillGlass(); //the actual served glass is no object because we turn on the dispenser
+                } catch (InterruptedException e) {
+                    //let is slide
+                }
+                item.glassDetected(false);
                 return;
             }
         }
-
-        //if the code reaches here the provided glass is not allowed by the dispenser
-        System.out.println("Provided glass is not allowed by the dispenser");
         throw new GlassNotAcceptedException(glass, "Provided glass is not allowed by the dispenser");
+    }
+
+    public void emptyWasteReservoir() {
+        wasteReservoir.setEmpty();
+    }
+
+    public void fillDrinkReservoirs() {
+        //TODO: fill the reservoirs
     }
 }
