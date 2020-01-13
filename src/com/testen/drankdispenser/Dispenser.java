@@ -12,12 +12,19 @@ public class Dispenser {
 
     public static void main(String args[]) {
         System.out.println("Drankdispenser wordt gestart");
-        Dispenser testen = new  Dispenser("Testen dingetje");
+        Dispenser testen = new Dispenser("Testen dingetje");
         testen.addGlass(DrinkTypes.BEER);
         testen.addGlass(DrinkTypes.COLA);
         testen.printGlasses();
-        testen.serveGlass(DrinkTypes.BEER);
-        testen.serveGlass(DrinkTypes.WINE);
+
+
+        try {
+            testen.serveGlass(DrinkTypes.BEER);
+            testen.serveGlass(DrinkTypes.WINE);
+        } catch (GlassNotAcceptedException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public Dispenser(String Name){
@@ -59,9 +66,9 @@ public class Dispenser {
         }
     }
 
-    public void serveGlass(DrinkTypes glass){
-        for(Glass item: glasses.values()){
-            if(item.getDrinkType() == glass){
+    public void serveGlass(DrinkTypes glass) throws GlassNotAcceptedException {
+        for (Glass item : glasses.values()) {
+            if (item.getDrinkType() == glass) {
                 item.fillGlass(); //the actual served glass is no object because we turn on the dispenser
                 System.out.println("Glass was filled with " + item.getName());
                 return;
@@ -70,5 +77,6 @@ public class Dispenser {
 
         //if the code reaches here the provided glass is not allowed by the dispenser
         System.out.println("Provided glass is not allowed by the dispenser");
+        throw new GlassNotAcceptedException(glass, "Provided glass is not allowed by the dispenser");
     }
 }
