@@ -1,6 +1,10 @@
 package com.testen.drankdispenser.glas;
 
 import com.testen.drankdispenser.DrinkTypes;
+import com.testen.drankdispenser.reservoir.DrinkReservoir;
+import com.testen.drankdispenser.reservoir.DrinkReservoirEmptyException;
+import com.testen.drankdispenser.reservoir.WasteReservoir;
+import com.testen.drankdispenser.reservoir.WasteReservoirFullException;
 
 public abstract class Glass {
     private String name; //sinas of cola ofzo
@@ -36,8 +40,15 @@ public abstract class Glass {
         return drink;
     }
 
-    public void fillGlass() throws InterruptedException {
+    public void fillGlass(DrinkReservoir rDrink, WasteReservoir rWaste) throws InterruptedException, DrinkReservoirEmptyException, WasteReservoirFullException {
         System.out.println("Attempting to fill the glass...");
+
+        //tell the reservoir that he needs to remove some content
+        rDrink.drain(size);
+
+        //add some water to the waste reservoir
+        rWaste.fill(10); //every glass adds 10 milliliter to the waste
+
         while (glassDetected && filledPercentage < 100) {
             filledPercentage++;
             if (filledPercentage % 10 == 0) {

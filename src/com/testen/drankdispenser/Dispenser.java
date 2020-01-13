@@ -2,20 +2,23 @@ package com.testen.drankdispenser;
 
 import com.testen.drankdispenser.glas.*;
 import com.testen.drankdispenser.reservoir.DrinkReservoir;
-import com.testen.drankdispenser.reservoir.Reservoir;
+import com.testen.drankdispenser.reservoir.DrinkReservoirEmptyException;
 import com.testen.drankdispenser.reservoir.WasteReservoir;
+import com.testen.drankdispenser.reservoir.WasteReservoirFullException;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class Dispenser {
 
     private String name; //the name of the dispenser
     private HashMap<String, Glass> glasses;
-    private HashMap<String, Reservoir> reservoirs;
+    private HashMap<String, DrinkReservoir> reservoirs;
     private WasteReservoir wasteReservoir;
 
     public static void main(String args[]) {
         System.out.println("Drankdispenser wordt gestart");
+
         Dispenser testen = new Dispenser("Testen dingetje");
 
         //set the allowed drinks (set these before filling reservoirs ;) )
@@ -37,6 +40,9 @@ public class Dispenser {
             System.out.println("Error: That glass is not supported");
         }
 
+        if (testen.isMaintenanceRequired()) {
+            testen.printMaintenanceStatus();
+        }
     }
 
     public Dispenser(String Name) {
@@ -52,7 +58,7 @@ public class Dispenser {
 
     public void addAllowedDrinkType(DrinkTypes type) {
         String typeName = type.name();
-        int resSize = 1500;
+        int resSize = 5000;
         switch (type) {
             case COLA:
                 glasses.put(typeName, new ColaGlass());
@@ -93,15 +99,20 @@ public class Dispenser {
             if (item.getDrinkType() == glass) {
                 item.glassDetected(true); //you could set this to false half way through pouring except we don't do multithreading
                 try {
-                    item.fillGlass(); //the actual served glass is no object because we turn on the dispenser
+                    item.fillGlass(reservoirs.get(glass.name()), wasteReservoir); //the actual served glass is no object because we turn on the dispenser
                 } catch (InterruptedException e) {
                     //let is slide
+                } catch (WasteReservoirFullException e2) {
+                    //tell the user that the waste reservoir is full
+                    System.out.println("Could not fill glass, the waste reservoir is full.");
+                } catch (DrinkReservoirEmptyException e3) {
+                    System.out.println("Could not fill glass, the " + glass.name() + " reservoir is empty.");
                 }
                 item.glassDetected(false);
                 return;
             }
         }
-        throw new GlassNotAcceptedException(glass, "Provided glass is not allowed by the dispenser");
+        throw new GlassNotAcceptedException(glass, "Provided glass is not allowed by the dispenser.");
     }
 
     public void emptyWasteReservoir() {
@@ -109,6 +120,33 @@ public class Dispenser {
     }
 
     public void fillDrinkReservoirs() {
-        //TODO: fill the reservoirs
+        for (DrinkReservoir r : reservoirs.values()) {
+            r.setFull(); //now all the reservoirs are going to be filled
+        }
+    }
+
+    public boolean isMaintenanceRequired() {
+        boolean required = false;
+
+        if (wasteReservoir.isFull()) { //checks if its above the set margin (80%)
+            required = true;
+            System.out.println("Empty the waste reservoir");
+        }
+
+        for (Map.Entry<String, DrinkReservoir> r2 : reservoirs.entrySet()) {
+            if (r2.getValue().isEmpty()) { //checks if its below the set margin (15%)
+                required = true;
+                System.out.println("Fill the " + r2.getKey() + " reservoir");
+            }
+        }
+
+        return required;
+    }
+
+    public void printMaintenanceStatus() {
+        System.out.println("Waste reservoir is filled for " + wasteReservoir.calcPercentageFilled() + "%");
+        for (Map.Entry<String, DrinkReservoir> r2 : reservoirs.entrySet()) {
+            System.out.println(r2.getKey() + " reservoir is filled for " + r2.getValue().calcPercentageFilled() + "%");
+        }
     }
 }

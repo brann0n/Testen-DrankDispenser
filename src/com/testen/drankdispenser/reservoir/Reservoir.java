@@ -25,7 +25,7 @@ public abstract class Reservoir {
         filled = 0;
     }
 
-    public void setFilled(int milliliters) {
+    protected void setFilled(int milliliters) {
         if (milliliters < size) {
             filled = milliliters;
         } else {
@@ -41,11 +41,11 @@ public abstract class Reservoir {
         return size;
     }
 
-    public abstract void drain(int amount);
+    public abstract void drain(int amount) throws DrinkReservoirEmptyException;
 
-    public abstract void fill(int amount);
+    public abstract void fill(int amount) throws WasteReservoirFullException;
 
-    private double calcPercentageFilled() {
-        return (double) filled / size;
+    public double calcPercentageFilled() {
+        return 100 * ((double) filled / size);
     }
 }
